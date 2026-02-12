@@ -36,11 +36,11 @@ const VoiceButton = ({
       
       <button
         className={`voice-button ${getButtonState()}`}
-        onMouseDown={!isDisabled ? onStartTransmission : undefined}
-        onMouseUp={!isDisabled ? onStopTransmission : undefined}
-        onTouchStart={!isDisabled ? onStartTransmission : undefined}
-        onTouchEnd={!isDisabled ? onStopTransmission : undefined}
-        onMouseLeave={isTransmitting ? onStopTransmission : undefined}
+        onMouseDown={(e) => !isDisabled && onStartTransmission(e)}
+        onMouseUp={(e) => !isDisabled && onStopTransmission(e)}
+        onTouchStart={(e) => !isDisabled && onStartTransmission(e)}
+        onTouchEnd={(e) => !isDisabled && onStopTransmission(e)}
+        onContextMenu={(e) => e.preventDefault()}
         disabled={isDisabled}
       >
         {getButtonText()}
