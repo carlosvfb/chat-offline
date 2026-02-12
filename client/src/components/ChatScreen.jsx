@@ -35,11 +35,18 @@ const ChatScreen = ({ user }) => {
 
     function onConnect() {
       setIsConnected(true);
+      console.log('Reconectado ao servidor');
       socket.emit('user-joined', user);
     }
 
-    function onDisconnect() {
+    function onReconnect() {
+      console.log('Tentando re-identificar após reconexão...');
+      socket.emit('user-joined', user);
+    }
+
+    function onDisconnect(reason) {
       setIsConnected(false);
+      console.log('Desconectado:', reason);
     }
 
     function onMessageHistory(history) {
@@ -71,6 +78,7 @@ const ChatScreen = ({ user }) => {
     }
 
     socket.on('connect', onConnect);
+    socket.on('reconnect', onReconnect);
     socket.on('disconnect', onDisconnect);
     socket.on('message-history', onMessageHistory);
     socket.on('receive-message', onReceiveMessage);
@@ -85,6 +93,7 @@ const ChatScreen = ({ user }) => {
 
     return () => {
       socket.off('connect', onConnect);
+      socket.off('reconnect', onReconnect);
       socket.off('disconnect', onDisconnect);
       socket.off('message-history', onMessageHistory);
       socket.off('receive-message', onReceiveMessage);
