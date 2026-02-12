@@ -61,9 +61,36 @@ O console mostrará o IP e porta para acesso.
 
 ---
 
+## 📻 Funcionalidade de Rádio (Walkie-Talkie)
+
+O sistema agora inclui um modo **Push-to-Talk (PTT)** integrado:
+
+- **Como usar:** Segure o botão circular grande no centro da tela para transmitir sua voz. Solte para parar.
+- **Canal Único:** Apenas uma pessoa pode falar por vez. Se o botão estiver amarelo, o canal está ocupado.
+- **Feedback Visual:** 
+  - 🟢 **Verde:** Você está transmitindo.
+  - 🔴 **Vermelho:** Alguém está falando e você está ouvindo.
+  - 🟡 **Amarelo:** Canal ocupado.
+- **Permissões:** Você **DEVE** permitir o acesso ao microfone no navegador para usar esta função.
+- **Latência:** O áudio é transmitido em chunks de 100ms para garantir baixa latência (quase instantâneo).
+
+---
+
 ## 📱 Como Conectar Outros Dispositivos
 
 1. Peça aos outros usuários para conectarem ao seu **Wi-Fi (Hotspot)**.
-2. No navegador do celular deles, acessem o endereço exibido (ex: `http://192.168.43.1:3000`).
-3. **Permita as notificações** quando o navegador solicitar.
-4. Escolha um nome e comece a conversar!
+2. No navegador do celular deles, acessem o endereço exibido (ex: `https://192.168.43.1:3000`).
+3. **⚠️ IMPORTANTE (HTTPS):** Para que as notificações e o **microfone** funcionem, o navegador exige uma conexão segura. 
+   - Como usamos certificados auto-assinados, o navegador mostrará um aviso de "Conexão não é privada".
+   - Clique em **"Avançado"** e depois em **"Prosseguir para [IP] (não seguro)"**.
+4. Permita as notificações e o microfone quando solicitado.
+5. Escolha um nome e comece a conversar!
+
+---
+
+## 🛠️ Solução de Problemas (Troubleshooting)
+
+- **Microfone não funciona:** Verifique se acessou via `https://` e se deu permissão no cadeado do navegador.
+- **Áudio cortando:** Certifique-se de que os aparelhos não estão muito longe do Hotspot.
+- **Notificação não aparece:** Alguns navegadores (como Brave) exigem uma interação inicial com a página antes de permitirem sons ou notificações. Clique em qualquer lugar da tela primeiro.
+

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
+import VoiceButton from './VoiceButton';
+import { useVoiceChat } from '../hooks/useVoiceChat';
 import { socket } from '../socket';
 
 const ChatScreen = ({ user }) => {
@@ -8,6 +10,15 @@ const ChatScreen = ({ user }) => {
   const [onlineCount, setOnlineCount] = useState(0);
   const [typingUser, setTypingUser] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
+
+  const {
+    isTransmitting,
+    currentSpeaker,
+    isChannelBusy,
+    startTransmission,
+    stopTransmission,
+    setupSocketListeners
+  } = useVoiceChat(socket, user);
 
   useEffect(() => {
     function onConnect() {
@@ -50,6 +61,9 @@ const ChatScreen = ({ user }) => {
     socket.on('online-count', onOnlineCount);
     socket.on('user-typing', onUserTyping);
 
+    // Setup Voice listeners
+    const cleanupVoice = setupSocketListeners();
+
     socket.connect();
 
     return () => {
@@ -59,8 +73,9 @@ const ChatScreen = ({ user }) => {
       socket.off('receive-message', onReceiveMessage);
       socket.off('online-count', onOnlineCount);
       socket.off('user-typing', onUserTyping);
+      if (cleanupVoice) cleanupVoice();
     };
-  }, [user]);
+  }, [user, setupSocketListeners]);
 
   const handleSendMessage = (text) => {
     socket.emit('send-message', { user, text });
@@ -151,6 +166,17 @@ const ChatScreen = ({ user }) => {
       )}
 
       <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+
+      {isConnected && (
+        <VoiceButton
+          isTransmitting={isTransmitting}
+          currentSpeaker={currentSpeaker}
+          isChannelBusy={isChannelBusy}
+          username={user}
+          onStartTransmission={startTransmission}
+          onStopTransmission={stopTransmission}
+        />
+      )}
     </div>
   );
 };

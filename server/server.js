@@ -32,6 +32,9 @@ let messages = [];
 const MAX_MESSAGES = 50;
 let onlineUsers = new Map(); // socket.id -> username
 
+// Controle de transmissão de voz
+let currentVoiceSpeaker = null;
+
 // Helper function to get local IP address (prioritizing Hotspot range if available)
 function getLocalIP() {
   const interfaces = os.networkInterfaces();
@@ -98,9 +101,60 @@ io.on('connection', (socket) => {
     socket.broadcast.emit('user-typing', data);
   });
 
+  // NOVOS EVENTOS DE VOZ (RADIO PTT)
+  
+  socket.on('start-voice-transmission', (username) => {
+    if (!currentVoiceSpeaker) {
+      currentVoiceSpeaker = {
+        socketId: socket.id,
+        username: username
+      };
+      
+      console.log(`🎤 [VOZ] ${username} começou transmissão`);
+      
+      // Notificar todos que transmissão começou
+      io.emit('voice-transmission-started', {
+        username: username,
+        socketId: socket.id
+      });
+    } else {
+      // Canal ocupado
+      socket.emit('voice-channel-busy', {
+        currentSpeaker: currentVoiceSpeaker.username
+      });
+    }
+  });
+
+  socket.on('voice-audio-chunk', (audioData) => {
+    // Só retransmitir se for o speaker atual
+    if (currentVoiceSpeaker && currentVoiceSpeaker.socketId === socket.id) {
+      // Broadcast para todos exceto transmissor
+      socket.broadcast.emit('voice-audio-stream', audioData);
+    }
+  });
+
+  socket.on('stop-voice-transmission', () => {
+    if (currentVoiceSpeaker && currentVoiceSpeaker.socketId === socket.id) {
+      const username = currentVoiceSpeaker.username;
+      console.log(`🔇 [VOZ] ${username} parou transmissão`);
+      
+      currentVoiceSpeaker = null;
+      io.emit('voice-transmission-ended', { username });
+    }
+  });
+
   // Handle disconnection
   socket.on('disconnect', () => {
     const username = onlineUsers.get(socket.id);
+    
+    // Liberar canal se transmissor desconectar
+    if (currentVoiceSpeaker && currentVoiceSpeaker.socketId === socket.id) {
+      const speakerName = currentVoiceSpeaker.username;
+      console.log(`❌ [VOZ] ${speakerName} desconectou durante transmissão`);
+      currentVoiceSpeaker = null;
+      io.emit('voice-transmission-ended', { username: speakerName });
+    }
+
     if (username) {
       onlineUsers.delete(socket.id);
       console.log(`Usuário saiu: ${username}`);
