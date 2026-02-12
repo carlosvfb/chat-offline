@@ -89,18 +89,43 @@ const ChatScreen = ({ user }) => {
         new Notification(payload.title, { body: payload.body, icon: payload.icon });
       }
       
-      // Som de notificação (beep simples)
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const oscillator = audioCtx.createOscillator();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-        oscillator.connect(audioCtx.destination);
-        oscillator.start();
-        oscillator.stop(audioCtx.currentTime + 0.1);
-      } catch (e) {
-        console.log('Erro ao tocar som:', e);
+      // Som de notificação e vibração
+      playNotificationSound();
+    }
+  };
+
+  const playNotificationSound = () => {
+    try {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      
+      // Criar um som de "ding" mais complexo
+      const playTone = (freq, startTime, duration) => {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, startTime);
+        
+        gain.gain.setValueAtTime(0.2, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, startTime + duration);
+        
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+
+      // Duas notas para um som de notificação clássico
+      playTone(880, audioCtx.currentTime, 0.2);
+      playTone(1046, audioCtx.currentTime + 0.1, 0.3);
+
+      // Vibração para dispositivos móveis
+      if ('vibrate' in navigator) {
+        navigator.vibrate([200, 100, 200]);
       }
+    } catch (e) {
+      console.log('Erro ao tocar som:', e);
     }
   };
 

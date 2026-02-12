@@ -32,6 +32,26 @@ body {
   flex-direction: column;
 }
 
+.notification-banner {
+  background-color: #007bff;
+  color: white;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  animation: slideDown 0.5s ease-out;
+  z-index: 1000;
+}
+
+.notification-banner:hover {
+  background-color: #0056b3;
+}
+
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+
 /* Login Screen */
 .login-container {
   display: flex;
