@@ -17,10 +17,20 @@ const ChatScreen = ({ user }) => {
     isChannelBusy,
     startTransmission,
     stopTransmission,
-    setupSocketListeners
+    setupSocketListeners,
+    enableBackgroundMode
   } = useVoiceChat(socket, user);
 
   useEffect(() => {
+    const handleInteraction = () => {
+      enableBackgroundMode();
+      window.removeEventListener('click', handleInteraction);
+      window.removeEventListener('touchstart', handleInteraction);
+    };
+
+    window.addEventListener('click', handleInteraction);
+    window.addEventListener('touchstart', handleInteraction);
+
     function onConnect() {
       setIsConnected(true);
       socket.emit('user-joined', user);

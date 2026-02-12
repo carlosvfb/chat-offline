@@ -9,10 +9,49 @@ export const useVoiceChat = (socket, username) => {
   const streamRef = useRef(null);
   const processorRef = useRef(null);
   const sourceRef = useRef(null);
+  const keepAliveAudioRef = useRef(null);
   
   // Para reprodução
   const playbackContextRef = useRef(null);
   const nextStartTimeRef = useRef(0);
+
+  // Estratégia Keep-Alive para Segundo Plano
+  const enableBackgroundMode = useCallback(() => {
+    if (keepAliveAudioRef.current) return;
+
+    // Áudio silencioso de 1 segundo em base64
+    const SILENT_WAV = 'data:audio/wav;base64,UklGRjIAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhBAAAAAAAAgA=';
+    const audio = new Audio(SILENT_WAV);
+    audio.loop = true;
+    audio.volume = 0.01; // Quase mudo, mas ativo para o sistema
+    
+    const playAudio = () => {
+      audio.play().catch(e => console.log("Background audio blocked:", e));
+    };
+
+    // Media Session API para manter o processo vivo no Android/iOS
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Rádio Chat Offline',
+        artist: username,
+        album: 'Ativo em Segundo Plano',
+        artwork: [
+          { src: '/vite.svg', sizes: '512x512', type: 'image/svg+xml' }
+        ]
+      });
+
+      // Handlers vazios para evitar que o sistema pause o áudio
+      navigator.mediaSession.setActionHandler('play', playAudio);
+      navigator.mediaSession.setActionHandler('pause', () => {
+        // Tenta dar play novamente se o sistema pausar
+        setTimeout(playAudio, 1000);
+      });
+    }
+
+    playAudio();
+    keepAliveAudioRef.current = audio;
+    console.log("Modo rádio em segundo plano ativado.");
+  }, [username]);
 
   // Inicializar AudioContext de forma robusta
   const getAudioContext = useCallback(() => {
@@ -158,6 +197,7 @@ export const useVoiceChat = (socket, username) => {
     isChannelBusy,
     startTransmission,
     stopTransmission,
-    setupSocketListeners
+    setupSocketListeners,
+    enableBackgroundMode
   };
 };
