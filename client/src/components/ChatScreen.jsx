@@ -8,6 +8,8 @@ import { socket } from '../socket';
 const ChatScreen = ({ user }) => {
   const [messages, setMessages] = useState([]);
   const [onlineCount, setOnlineCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState([]);
+  const [showUserList, setShowUserList] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
 
@@ -57,6 +59,10 @@ const ChatScreen = ({ user }) => {
       setOnlineCount(count);
     }
 
+    function onUpdateUsers(users) {
+      setOnlineUsers(users);
+    }
+
     function onUserTyping(data) {
       if (data.user !== user && data.isTyping) {
         setTypingUser(data.user);
@@ -69,6 +75,7 @@ const ChatScreen = ({ user }) => {
     socket.on('message-history', onMessageHistory);
     socket.on('receive-message', onReceiveMessage);
     socket.on('online-count', onOnlineCount);
+    socket.on('update-users', onUpdateUsers);
     socket.on('user-typing', onUserTyping);
 
     // Setup Voice listeners
@@ -82,6 +89,7 @@ const ChatScreen = ({ user }) => {
       socket.off('message-history', onMessageHistory);
       socket.off('receive-message', onReceiveMessage);
       socket.off('online-count', onOnlineCount);
+      socket.off('update-users', onUpdateUsers);
       socket.off('user-typing', onUserTyping);
       if (cleanupVoice) cleanupVoice();
     };
@@ -157,15 +165,34 @@ const ChatScreen = ({ user }) => {
   return (
     <div className="chat-screen">
       <header className="chat-header">
-        <div className="header-info">
+        <div className="header-info" onClick={() => setShowUserList(!showUserList)} style={{ cursor: 'pointer' }}>
           <h2>Chat Local</h2>
           <div className="header-status">
             <span className={`status-dot ${isConnected ? 'online' : 'offline'}`}></span>
-            <span className="online-count">{onlineCount} online</span>
+            <span className="online-count">{onlineCount} online (ver todos)</span>
           </div>
         </div>
         <div className="current-user"><strong>{user}</strong></div>
       </header>
+
+      {showUserList && (
+        <div className="user-list-overlay" onClick={() => setShowUserList(false)}>
+          <div className="user-list-modal" onClick={e => e.stopPropagation()}>
+            <div className="user-list-header">
+              <h3>Usuários Online</h3>
+              <button onClick={() => setShowUserList(false)}>×</button>
+            </div>
+            <div className="user-list-content">
+              {onlineUsers.map((u, i) => (
+                <div key={i} className="user-list-item">
+                  <span className="user-dot online"></span>
+                  {u} {u === user && "(você)"}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
 
       <MessageList messages={messages} currentUser={user} />
 

@@ -75,6 +75,7 @@ io.on('connection', (socket) => {
 
     // Send current online count to everyone
     io.emit('online-count', onlineUsers.size);
+    io.emit('update-users', Array.from(onlineUsers.values()));
   });
 
   // Handle new messages
@@ -166,6 +167,7 @@ io.on('connection', (socket) => {
       });
       
       io.emit('online-count', onlineUsers.size);
+      io.emit('update-users', Array.from(onlineUsers.values()));
     }
   });
 });
