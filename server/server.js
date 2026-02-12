@@ -4,6 +4,7 @@ const { Server } = require('socket.io');
 const path = require('path');
 const cors = require('cors');
 const os = require('os');
+const fs = require('fs');
 require('dotenv').config();
 
 const app = express();
@@ -16,11 +17,15 @@ const io = new Server(server, {
 });
 
 const PORT = process.env.PORT || 3000;
+const DIST_PATH = path.resolve(__dirname, '../client/dist');
+const INDEX_HTML = path.join(DIST_PATH, 'index.html');
 
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname, '../client/dist')));
+
+// Serve static files with logging
+app.use(express.static(DIST_PATH));
 
 // In-memory storage
 let messages = [];
@@ -113,7 +118,23 @@ io.on('connection', (socket) => {
 
 // Serve React App for any other routes (SPA Fallback)
 app.use((req, res) => {
-  res.sendFile(path.resolve(__dirname, '../client/dist/index.html'));
+  if (fs.existsSync(INDEX_HTML)) {
+    res.sendFile(INDEX_HTML);
+  } else {
+    res.status(404).send(`
+      <div style="font-family: sans-serif; padding: 20px; text-align: center;">
+        <h1 style="color: #ff4444;">Erro: Build não encontrado</h1>
+        <p>O arquivo <strong>index.html</strong> não foi encontrado em: <br><code>${INDEX_HTML}</code></p>
+        <hr>
+        <p><strong>Como resolver:</strong></p>
+        <ol style="display: inline-block; text-align: left;">
+          <li>Vá para a pasta <code>client</code> no seu PC ou Termux</li>
+          <li>Execute: <code>npm install</code> e depois <code>npm run build</code></li>
+          <li>Certifique-se de que a pasta <code>dist</code> foi criada dentro de <code>client</code></li>
+        </ol>
+      </div>
+    `);
+  }
 });
 
 // Start server
@@ -123,6 +144,8 @@ server.listen(PORT, '0.0.0.0', () => {
   console.log('SISTEMA DE CHAT HOTSPOT INICIADO');
   console.log(`Porta: ${PORT}`);
   console.log(`IP Local: ${localIP}`);
+  console.log(`Caminho do Build: ${DIST_PATH}`);
+  console.log(`Status do Build: ${fs.existsSync(INDEX_HTML) ? '✅ OK' : '❌ NÃO ENCONTRADO'}`);
   console.log(`Acesse: http://${localIP}:${PORT}`);
   console.log('-------------------------------------------');
 });
