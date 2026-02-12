@@ -25,7 +25,10 @@ const MessageList = ({ messages, currentUser }) => {
           <div className="message-bubble">
             <span className="message-user">{msg.user}</span>
             <p className="message-text">{msg.text}</p>
-            <span className="message-time">{formatTime(msg.timestamp)}</span>
+            <div className="message-footer">
+              <span className="message-time">{formatTime(msg.timestamp)}</span>
+              {msg.isPending && <span className="pending-icon">🕒</span>}
+            </div>
           </div>
         </div>
       ))}

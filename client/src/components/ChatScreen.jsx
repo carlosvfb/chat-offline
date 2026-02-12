@@ -11,7 +11,42 @@ const ChatScreen = ({ user }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showUserList, setShowUserList] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
+  const [outbox, setOutbox] = useState(() => {
+    const saved = localStorage.getItem('chat_outbox');
+    return saved ? JSON.parse(saved) : [];
+  });
   const [isConnected, setIsConnected] = useState(socket.connected);
+
+  // Sincronizar outbox com localStorage
+  useEffect(() => {
+    localStorage.setItem('chat_outbox', JSON.stringify(outbox));
+  }, [outbox]);
+
+  // Função para processar fila de mensagens pendentes
+  const processOutbox = (currentSocket) => {
+    const savedOutbox = JSON.parse(localStorage.getItem('chat_outbox') || '[]');
+    if (savedOutbox.length > 0) {
+      console.log(`Enviando ${savedOutbox.length} mensagens pendentes...`);
+      savedOutbox.forEach(msg => {
+        currentSocket.emit('send-message', { user: msg.user, text: msg.text });
+      });
+      setOutbox([]);
+      localStorage.setItem('chat_outbox', '[]');
+    }
+  };
+
+  // Registrar Background Sync se disponível
+  const registerBackgroundSync = async () => {
+    if ('serviceWorker' in navigator && 'SyncManager' in window) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        await registration.sync.register('sync-messages');
+        console.log('Background Sync registrado');
+      } catch (err) {
+        console.log('Background Sync falhou:', err);
+      }
+    }
+  };
 
   const {
     isTransmitting,
@@ -37,11 +72,13 @@ const ChatScreen = ({ user }) => {
       setIsConnected(true);
       console.log('Reconectado ao servidor');
       socket.emit('user-joined', user);
+      processOutbox(socket);
     }
 
     function onReconnect() {
       console.log('Tentando re-identificar após reconexão...');
       socket.emit('user-joined', user);
+      processOutbox(socket);
     }
 
     function onDisconnect(reason) {
@@ -105,7 +142,26 @@ const ChatScreen = ({ user }) => {
   }, [user, setupSocketListeners]);
 
   const handleSendMessage = (text) => {
-    socket.emit('send-message', { user, text });
+    if (socket.connected) {
+      socket.emit('send-message', { user, text });
+    } else {
+      // Salvar na outbox se estiver offline
+      const pendingMsg = {
+        id: `pending-${Date.now()}`,
+        user: user,
+        text: text,
+        timestamp: new Date().toISOString(),
+        isPending: true
+      };
+      
+      setOutbox(prev => [...prev, pendingMsg]);
+      // Adicionar à lista local para o usuário ver que foi "enviada" (mas pendente)
+      setMessages(prev => [...prev, pendingMsg]);
+      console.log('Mensagem salva em cache (offline)');
+      
+      // Tentar registrar sincronização em background
+      registerBackgroundSync();
+    }
   };
 
   const handleTyping = () => {

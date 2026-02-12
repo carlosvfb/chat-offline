@@ -36,7 +36,29 @@ let messages = [];
 const MAX_MESSAGES = 50;
 let onlineUsers = new Map(); // socket.id -> username
 
-// Controle de transmissão de voz
+// Novo endpoint HTTP para o Service Worker enviar mensagens em background
+app.post('/api/messages', (req, res) => {
+  const { user, text } = req.body;
+  if (!user || !text) return res.status(400).json({ error: 'Faltando dados' });
+
+  const newMessage = {
+    id: Date.now().toString(),
+    user: user,
+    text: text.substring(0, 500),
+    timestamp: new Date().toISOString()
+  };
+
+  messages.push(newMessage);
+  if (messages.length > MAX_MESSAGES) messages.shift();
+
+  // Notificar todos via socket.io que uma mensagem chegou via HTTP
+  io.emit('receive-message', newMessage);
+  
+  console.log(`[HTTP/SW] Mensagem de ${user}: ${text.substring(0, 20)}...`);
+  res.status(201).json(newMessage);
+});
+
+// MiddlewareControle de transmissão de voz
 let currentVoiceSpeaker = null;
 
 // Helper function to get local IP address (prioritizing Hotspot range if available)
