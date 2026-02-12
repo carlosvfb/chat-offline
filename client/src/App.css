@@ -1,13 +1,10 @@
 :root {
+  --vh: 1vh;
   --primary: #25d366;
-  --primary-dark: #128c7e;
-  --bg-color: #f0f2f5;
-  --chat-bg: #e5ddd5;
-  --text-main: #111b21;
-  --text-secondary: #667781;
-  --white: #ffffff;
-  --own-msg: #d9fdd3;
-  --other-msg: #ffffff;
+  --secondary: #075e54;
+  --bg-chat: #e5ddd5;
+  --bubble-own: #dcf8c6;
+  --bubble-other: #ffffff;
 }
 
 * {
@@ -16,114 +13,71 @@
   padding: 0;
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  background-color: var(--bg-color);
-  color: var(--text-main);
-  height: 100vh;
+body, html, #root {
+  height: 100%;
+  width: 100%;
   overflow: hidden;
 }
 
 .app-container {
   height: 100vh;
-  max-width: 600px;
-  margin: 0 auto;
+  height: calc(var(--vh, 1vh) * 100);
+  width: 100vw;
+  background-color: var(--bg-chat);
   display: flex;
   flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
 }
 
 .notification-banner {
-  background-color: #007bff;
+  background-color: var(--secondary);
   color: white;
-  padding: 12px;
+  padding: 8px;
   text-align: center;
   cursor: pointer;
   font-weight: bold;
-  animation: slideDown 0.5s ease-out;
-  z-index: 1000;
+  font-size: 0.85rem;
+  z-index: 1001;
 }
 
-.notification-banner:hover {
-  background-color: #0056b3;
-}
-
-@keyframes slideDown {
-  from { transform: translateY(-100%); }
-  to { transform: translateY(0); }
-}
-
-/* Login Screen */
-.login-container {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  padding: 20px;
-}
-
-.login-card {
-  background: var(--white);
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  text-align: center;
-  width: 100%;
-}
-
-.login-card h1 {
-  color: var(--primary-dark);
-  margin-bottom: 10px;
-}
-
-.login-card p {
-  color: var(--text-secondary);
-  margin-bottom: 20px;
-}
-
-.login-card input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  font-size: 16px;
-}
-
-.login-card button {
-  width: 100%;
-  padding: 12px;
-  background: var(--primary);
+.security-warning {
+  background-color: #dc3545;
   color: white;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
+  padding: 8px;
+  text-align: center;
+  font-size: 0.8rem;
+  z-index: 1001;
 }
 
-/* Chat Screen */
+/* Chat Screen Layout */
 .chat-screen {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--chat-bg);
+  width: 100%;
 }
 
 .chat-header {
-  background: var(--primary-dark);
+  background-color: var(--secondary);
   color: white;
   padding: 10px 15px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-  z-index: 10;
+  z-index: 100;
 }
 
-.header-info {
+.header-info h2 {
+  font-size: 1.1rem;
+}
+
+.header-status {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 5px;
 }
 
 .status-dot {
@@ -132,19 +86,14 @@ body {
   border-radius: 50%;
 }
 
-.status-dot.online { background: #00ff00; }
-.status-dot.offline { background: #ff4444; }
+.status-dot.online { background-color: var(--primary); }
+.status-dot.offline { background-color: #ff4b4b; }
 
 .online-count {
-  font-size: 12px;
+  font-size: 0.8rem;
   opacity: 0.9;
 }
 
-.current-user {
-  font-size: 12px;
-}
-
-/* Message List */
 .message-list {
   flex: 1;
   overflow-y: auto;
@@ -152,68 +101,69 @@ body {
   display: flex;
   flex-direction: column;
   gap: 8px;
+  background-image: url('https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png');
+  background-repeat: repeat;
 }
 
 .message-item {
   display: flex;
-  max-width: 85%;
+  width: 100%;
 }
 
 .message-item.own-message {
-  align-self: flex-end;
+  justify-content: flex-end;
 }
 
 .message-bubble {
-  padding: 8px 12px;
+  max-width: 85%;
+  padding: 6px 10px;
   border-radius: 8px;
   position: relative;
   box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+  font-size: 0.95rem;
 }
 
 .own-message .message-bubble {
-  background: var(--own-msg);
-  border-top-right-radius: 0;
+  background-color: var(--bubble-own);
+  border-top-right-radius: 2px;
 }
 
 .message-item:not(.own-message) .message-bubble {
-  background: var(--other-msg);
-  border-top-left-radius: 0;
+  background-color: var(--bubble-other);
+  border-top-left-radius: 2px;
 }
 
 .message-user {
   display: block;
-  font-size: 12px;
   font-weight: bold;
-  color: var(--primary-dark);
+  font-size: 0.75rem;
+  color: var(--secondary);
   margin-bottom: 2px;
 }
 
-.message-text {
-  font-size: 15px;
-  line-height: 1.4;
-  word-wrap: break-word;
+.own-message .message-user {
+  display: none;
 }
 
 .message-time {
   display: block;
-  font-size: 10px;
-  color: var(--text-secondary);
   text-align: right;
-  margin-top: 4px;
+  font-size: 0.65rem;
+  color: #999;
+  margin-top: 2px;
 }
 
-/* Typing Indicator */
 .typing-indicator {
   padding: 5px 15px;
-  font-size: 12px;
-  color: var(--text-secondary);
+  font-size: 0.8rem;
+  color: #666;
   font-style: italic;
+  background-color: rgba(255,255,255,0.5);
 }
 
-/* Message Input */
 .message-input {
-  background: #f0f2f5;
   padding: 10px;
+  background-color: #f0f0f0;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -221,32 +171,76 @@ body {
 
 .message-input input {
   flex: 1;
-  padding: 10px 15px;
+  padding: 12px 15px;
   border: none;
-  border-radius: 20px;
+  border-radius: 25px;
   outline: none;
-  font-size: 15px;
+  font-size: 1rem;
 }
 
 .message-input button {
-  background: var(--primary-dark);
+  background-color: var(--secondary);
   color: white;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 45px;
+  height: 45px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.message-input button:active {
+  transform: scale(0.9);
 }
 
 .message-input button:disabled {
-  background: #ccc;
+  background-color: #ccc;
 }
 
-@media (max-width: 600px) {
-  .app-container {
-    width: 100%;
-  }
+/* Login Screen Styles */
+.login-container {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  background: white;
+  padding: 30px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  width: 100%;
+  max-width: 400px;
+  text-align: center;
+}
+
+.login-card h1 {
+  color: var(--secondary);
+  margin-bottom: 10px;
+}
+
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  margin: 20px 0;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+
+.login-card button {
+  width: 100%;
+  padding: 12px;
+  background-color: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  cursor: pointer;
 }

@@ -134,10 +134,12 @@ const ChatScreen = ({ user }) => {
       <header className="chat-header">
         <div className="header-info">
           <h2>Chat Local</h2>
-          <span className={`status-dot ${isConnected ? 'online' : 'offline'}`}></span>
-          <span className="online-count">{onlineCount} online</span>
+          <div className="header-status">
+            <span className={`status-dot ${isConnected ? 'online' : 'offline'}`}></span>
+            <span className="online-count">{onlineCount} online</span>
+          </div>
         </div>
-        <div className="current-user">Logado como: <strong>{user}</strong></div>
+        <div className="current-user"><strong>{user}</strong></div>
       </header>
 
       <MessageList messages={messages} currentUser={user} />
