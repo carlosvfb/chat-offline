@@ -72,10 +72,46 @@ export const useVoiceChat = (socket, username) => {
     }
   }, [getAudioContext]);
 
+  // Efeitos sonoros de rádio (Beeps)
+  const playBeep = useCallback((type) => {
+    try {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      
+      osc.connect(gain);
+      gain.connect(context.destination);
+      
+      if (type === 'start') {
+        // Beep de início (dois tons curtos e agudos)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(880, context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1100, context.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.15);
+        osc.start();
+        osc.stop(context.currentTime + 0.15);
+      } else {
+        // Beep de fim (tom mais grave e descendente)
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(220, context.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.1, context.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.25);
+        osc.start();
+        osc.stop(context.currentTime + 0.25);
+      }
+    } catch (e) {
+      console.log("Beep error:", e);
+    }
+  }, []);
+
   // Começar transmissão (PTT)
   const startTransmission = useCallback(async (e) => {
     if (e && e.cancelable) e.preventDefault();
     if (isTransmitting || currentSpeaker) return;
+
+    playBeep('start');
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -115,6 +151,7 @@ export const useVoiceChat = (socket, username) => {
     if (e && e.cancelable) e.preventDefault();
     if (!isTransmitting) return;
 
+    playBeep('end');
     setIsTransmitting(false);
     socket.emit('stop-voice-transmission');
 
@@ -164,10 +201,14 @@ export const useVoiceChat = (socket, username) => {
       nextStartTimeRef.current = 0;
       if (speaker !== username) {
         initPlaybackContext();
+        playBeep('start');
       }
     });
 
     socket.on('voice-transmission-ended', () => {
+      if (currentSpeaker && currentSpeaker !== username) {
+        playBeep('end');
+      }
       setCurrentSpeaker(null);
       setIsChannelBusy(false);
     });
