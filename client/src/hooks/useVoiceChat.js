@@ -83,23 +83,23 @@ export const useVoiceChat = (socket, username) => {
       gain.connect(context.destination);
       
       if (type === 'start') {
-        // Beep de início (dois tons curtos e agudos)
+        // Beep de início (tom de rádio mais realista)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(880, context.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1100, context.currentTime + 0.1);
-        gain.gain.setValueAtTime(0.1, context.currentTime);
+        osc.frequency.setValueAtTime(800, context.currentTime);
+        gain.gain.setValueAtTime(0, context.currentTime);
+        gain.gain.linearRampToValueAtTime(0.1, context.currentTime + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.15);
         osc.start();
         osc.stop(context.currentTime + 0.15);
       } else {
-        // Beep de fim (tom mais grave e descendente)
+        // Beep de fim (som de rádio desligando)
         osc.type = 'sine';
-        osc.frequency.setValueAtTime(440, context.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(220, context.currentTime + 0.2);
+        osc.frequency.setValueAtTime(600, context.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(300, context.currentTime + 0.2);
         gain.gain.setValueAtTime(0.1, context.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.25);
+        gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
         osc.start();
-        osc.stop(context.currentTime + 0.25);
+        osc.stop(context.currentTime + 0.3);
       }
     } catch (e) {
       console.log("Beep error:", e);

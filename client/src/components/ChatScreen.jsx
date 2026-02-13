@@ -92,14 +92,19 @@ const ChatScreen = ({ user }) => {
 
     function onReceiveMessage(message) {
       setMessages(prev => {
-        // Evitar duplicatas de mensagens que foram enviadas enquanto offline e agora recebidas via socket
+        // Evitar duplicatas
         if (prev.find(m => m.id === message.id)) return prev;
         return [...prev, message];
       });
 
-      // Handle Notification
-      if (document.visibilityState !== 'visible' && message.user !== user) {
-        showNotification(message);
+      // Tocar som se a mensagem não for minha
+      if (message.user !== user) {
+        playNotificationSound();
+        
+        // Mostrar notificação se em background
+        if (document.visibilityState !== 'visible') {
+          showNotification(message);
+        }
       }
     }
 

@@ -17,31 +17,25 @@ const VoiceButton = ({
   };
 
   const getButtonText = () => {
-    if (isTransmitting) return '🔴 TRANSMITINDO...';
-    if (isChannelBusy && currentSpeaker) return `🔊 ${currentSpeaker} FALANDO...`;
-    if (isChannelBusy) return '⚠️ CANAL OCUPADO';
+    if (isTransmitting) return '🔴 VOCÊ ESTÁ TRANSMITINDO...';
+    if (currentSpeaker) return `🔊 ${currentSpeaker.toUpperCase()} FALANDO...`;
     return '🎤 APERTAR PARA FALAR (RÁDIO)';
   };
 
   const getHintText = () => {
     if (isTransmitting) return 'Solte para parar';
-    if (isChannelBusy) return 'Aguarde o canal liberar';
+    if (currentSpeaker) return 'Aguarde o canal liberar';
     return 'Segure para transmitir voz';
   };
 
   return (
     <div className="voice-button-container">
-      {isChannelBusy && !isTransmitting && (
-        <div className="speaker-indicator">
-          🔊 {currentSpeaker} falando...
-        </div>
-      )}
       <button
         className={`ptt-button ${getButtonState()}`}
         onMouseDown={(e) => !isDisabled && onStartTransmission(e)}
-        onMouseUp={(e) => !isDisabled && onStopTransmission(e)}
+        onMouseUp={(e) => onStopTransmission(e)}
         onTouchStart={(e) => !isDisabled && onStartTransmission(e)}
-        onTouchEnd={(e) => !isDisabled && onStopTransmission(e)}
+        onTouchEnd={(e) => onStopTransmission(e)}
         onContextMenu={(e) => e.preventDefault()}
         disabled={isDisabled}
       >
