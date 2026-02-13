@@ -267,18 +267,19 @@ const ChatScreen = ({ user }) => {
         </div>
       )}
 
-      <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
-
-      {isConnected && (
-        <VoiceButton
-          isTransmitting={isTransmitting}
-          currentSpeaker={currentSpeaker}
-          isChannelBusy={isChannelBusy}
-          username={user}
-          onStartTransmission={startTransmission}
-          onStopTransmission={stopTransmission}
-        />
-      )}
+      <footer className="chat-footer">
+        {isConnected && (
+          <VoiceButton
+            isTransmitting={isTransmitting}
+            currentSpeaker={currentSpeaker}
+            isChannelBusy={isChannelBusy}
+            username={user}
+            onStartTransmission={startTransmission}
+            onStopTransmission={stopTransmission}
+          />
+        )}
+        <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+      </footer>
     </div>
   );
 };
