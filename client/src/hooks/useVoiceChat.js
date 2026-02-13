@@ -129,10 +129,20 @@ export const useVoiceChat = (socket, username) => {
 
       processorRef.current.onaudioprocess = (e) => {
         const inputData = e.inputBuffer.getChannelData(0);
-        // Enviar como Float32Array diretamente para evitar erros de conversão
-        // Socket.io lida bem com buffers binários
+        
+        // Normalização e ganho extremo (600% no envio)
+         const gain = 6.0;
+         const buffer = new ArrayBuffer(inputData.length * 2);
+         const view = new DataView(buffer);
+         
+         for (let i = 0; i < inputData.length; i++) {
+           // Multiplica por 6 e limita o clipping de forma suave
+           const s = Math.max(-1, Math.min(1, inputData[i] * gain));
+           view.setInt16(i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+         }
+
         socket.emit('voice-audio-chunk', {
-          audio: inputData.buffer,
+          audio: buffer,
           sampleRate: sampleRate
         });
       };
@@ -172,14 +182,33 @@ export const useVoiceChat = (socket, username) => {
       await initPlaybackContext();
       const context = playbackContextRef.current;
       
-      // Reconstruir o buffer a partir do ArrayBuffer recebido
-      const audioData = new Float32Array(data.audio);
+      // Reconstruir o buffer a partir do PCM Int16 recebido
+      const view = new DataView(data.audio);
+      const audioData = new Float32Array(data.audio.byteLength / 2);
+      for (let i = 0; i < audioData.length; i++) {
+        audioData[i] = view.getInt16(i * 2, true) / 0x7FFF;
+      }
+
       const audioBuffer = context.createBuffer(1, audioData.length, data.sampleRate);
       audioBuffer.getChannelData(0).set(audioData);
 
       const source = context.createBufferSource();
       source.buffer = audioBuffer;
-      source.connect(context.destination);
+
+      // Ganho massivo de 400% na recepção e limitador rígido
+       const gainNode = context.createGain();
+       gainNode.gain.value = 4.0;
+ 
+       const compressor = context.createDynamicsCompressor();
+       compressor.threshold.setValueAtTime(-3, context.currentTime); // Sobe o threshold para deixar o volume passar
+       compressor.knee.setValueAtTime(0, context.currentTime); // Hard knee para volume máximo
+       compressor.ratio.setValueAtTime(20, context.currentTime); // Limiter mode
+       compressor.attack.setValueAtTime(0.001, context.currentTime);
+       compressor.release.setValueAtTime(0.1, context.currentTime);
+
+      source.connect(gainNode);
+      gainNode.connect(compressor);
+      compressor.connect(context.destination);
 
       const currentTime = context.currentTime;
       if (nextStartTimeRef.current < currentTime) {
