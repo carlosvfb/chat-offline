@@ -16,6 +16,21 @@ const ChatScreen = ({ user }) => {
     return saved ? JSON.parse(saved) : [];
   });
   const [isConnected, setIsConnected] = useState(socket.connected);
+  const [theme, setTheme] = useState(() => {
+    const saved = localStorage.getItem('chat_theme');
+    if (saved) return saved;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  });
+
+  // Aplicar tema ao documento
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('chat_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+  };
 
   // Sincronizar outbox com localStorage
   useEffect(() => {
@@ -237,7 +252,25 @@ const ChatScreen = ({ user }) => {
             <span className="online-count">{onlineCount} online (ver todos)</span>
           </div>
         </div>
-        <div className="current-user"><strong>{user}</strong></div>
+        <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button 
+            onClick={toggleTheme} 
+            className="theme-toggle"
+            title="Alternar Tema"
+            style={{ 
+              background: 'none', 
+              border: 'none', 
+              color: 'white', 
+              cursor: 'pointer', 
+              fontSize: '1.2rem',
+              display: 'flex',
+              alignItems: 'center'
+            }}
+          >
+            {theme === 'light' ? '🌙' : '☀️'}
+          </button>
+          <div className="current-user"><strong>{user}</strong></div>
+        </div>
       </header>
 
       {showUserList && (

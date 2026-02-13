@@ -30,18 +30,25 @@ const VoiceButton = ({
   };
 
   return (
-    <button
-      className={`voice-button ${getButtonState()}`}
-      onMouseDown={(e) => !isDisabled && onStartTransmission(e)}
-      onMouseUp={(e) => !isDisabled && onStopTransmission(e)}
-      onTouchStart={(e) => !isDisabled && onStartTransmission(e)}
-      onTouchEnd={(e) => !isDisabled && onStopTransmission(e)}
-      onContextMenu={(e) => e.preventDefault()}
-      disabled={isDisabled}
-    >
-      <span className="label">{getButtonText()}</span>
-      <span className="hint">{getHintText()}</span>
-    </button>
+    <div className="voice-button-container">
+      {isChannelBusy && !isTransmitting && (
+        <div className="speaker-indicator">
+          🔊 {currentSpeaker} falando...
+        </div>
+      )}
+      <button
+        className={`ptt-button ${getButtonState()}`}
+        onMouseDown={(e) => !isDisabled && onStartTransmission(e)}
+        onMouseUp={(e) => !isDisabled && onStopTransmission(e)}
+        onTouchStart={(e) => !isDisabled && onStartTransmission(e)}
+        onTouchEnd={(e) => !isDisabled && onStopTransmission(e)}
+        onContextMenu={(e) => e.preventDefault()}
+        disabled={isDisabled}
+      >
+        <span className="ptt-label">{getButtonText()}</span>
+        <span className="ptt-status">{getHintText()}</span>
+      </button>
+    </div>
   );
 };
 
