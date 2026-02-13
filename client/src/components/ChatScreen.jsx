@@ -13,6 +13,7 @@ const ChatScreen = ({ user }) => {
   const [showUserList, setShowUserList] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
   const [isConnected, setIsConnected] = useState(socket.connected);
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('chat_theme');
     if (saved) return saved;
@@ -28,6 +29,61 @@ const ChatScreen = ({ user }) => {
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
+
+  // Sons de conexão
+  const playConnectionSound = (type) => {
+    try {
+      const context = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = context.createOscillator();
+      const gain = context.createGain();
+      
+      osc.connect(gain);
+      gain.connect(context.destination);
+      
+      if (type === 'offline') {
+        // Som de alerta (três bips rápidos descendentes)
+        const now = context.currentTime;
+        [440, 330, 220].forEach((freq, i) => {
+          osc.frequency.setValueAtTime(freq, now + i * 0.15);
+          gain.gain.setValueAtTime(0.1, now + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.15 + 0.1);
+        });
+        osc.start(now);
+        osc.stop(now + 0.5);
+      } else {
+        // Som de volta online (dois bips ascendentes alegres)
+        const now = context.currentTime;
+        [523.25, 659.25].forEach((freq, i) => {
+          osc.frequency.setValueAtTime(freq, now + i * 0.1);
+          gain.gain.setValueAtTime(0.1, now + i * 0.1);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.08);
+        });
+        osc.start(now);
+        osc.stop(now + 0.3);
+      }
+    } catch (e) {
+      console.log("Connection sound error:", e);
+    }
+  };
+
+  useEffect(() => {
+    const handleOnline = () => {
+      setIsOnline(true);
+      playConnectionSound('online');
+    };
+    const handleOffline = () => {
+      setIsOnline(false);
+      playConnectionSound('offline');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   // Sincronizar mensagens pendentes do IndexedDB
   const syncOfflineMessages = useCallback(async () => {
@@ -76,6 +132,7 @@ const ChatScreen = ({ user }) => {
 
     function onConnect() {
       setIsConnected(true);
+      playConnectionSound('online');
       console.log('Reconectado ao servidor');
       socket.emit('user-joined', user);
       syncOfflineMessages();
@@ -83,6 +140,7 @@ const ChatScreen = ({ user }) => {
 
     function onDisconnect(reason) {
       setIsConnected(false);
+      playConnectionSound('offline');
       console.log('Desconectado:', reason);
     }
 
