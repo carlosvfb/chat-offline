@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import MessageList from './MessageList';
 import MessageInput from './MessageInput';
 import VoiceButton from './VoiceButton';
 import { useVoiceChat } from '../hooks/useVoiceChat';
 import { socket } from '../socket';
+import { savePendingMessage, getPendingMessages, removePendingMessage } from '../utils/offlineStorage';
 
 const ChatScreen = ({ user }) => {
   const [messages, setMessages] = useState([]);
@@ -11,10 +12,6 @@ const ChatScreen = ({ user }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [showUserList, setShowUserList] = useState(false);
   const [typingUser, setTypingUser] = useState(null);
-  const [outbox, setOutbox] = useState(() => {
-    const saved = localStorage.getItem('chat_outbox');
-    return saved ? JSON.parse(saved) : [];
-  });
   const [isConnected, setIsConnected] = useState(socket.connected);
   const [theme, setTheme] = useState(() => {
     const saved = localStorage.getItem('chat_theme');
@@ -32,36 +29,30 @@ const ChatScreen = ({ user }) => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
   };
 
-  // Sincronizar outbox com localStorage
-  useEffect(() => {
-    localStorage.setItem('chat_outbox', JSON.stringify(outbox));
-  }, [outbox]);
+  // Sincronizar mensagens pendentes do IndexedDB
+  const syncOfflineMessages = useCallback(async () => {
+    if (!socket.connected) return;
 
-  // Função para processar fila de mensagens pendentes
-  const processOutbox = (currentSocket) => {
-    const savedOutbox = JSON.parse(localStorage.getItem('chat_outbox') || '[]');
-    if (savedOutbox.length > 0) {
-      console.log(`Enviando ${savedOutbox.length} mensagens pendentes...`);
-      savedOutbox.forEach(msg => {
-        currentSocket.emit('send-message', { user: msg.user, text: msg.text });
-      });
-      setOutbox([]);
-      localStorage.setItem('chat_outbox', '[]');
-    }
-  };
-
-  // Registrar Background Sync se disponível
-  const registerBackgroundSync = async () => {
-    if ('serviceWorker' in navigator && 'SyncManager' in window) {
-      try {
-        const registration = await navigator.serviceWorker.ready;
-        await registration.sync.register('sync-messages');
-        console.log('Background Sync registrado');
-      } catch (err) {
-        console.log('Background Sync falhou:', err);
+    const pending = await getPendingMessages();
+    if (pending.length > 0) {
+      console.log(`Sincronizando ${pending.length} mensagens pendentes...`);
+      for (const msg of pending) {
+        if (msg.audio) {
+          socket.emit('send-audio', { 
+            user: msg.user, 
+            audio: msg.audio, 
+            duration: msg.duration 
+          });
+        } else {
+          socket.emit('send-message', { 
+            user: msg.user, 
+            text: msg.text 
+          });
+        }
+        await removePendingMessage(msg.id);
       }
     }
-  };
+  }, []);
 
   const {
     isTransmitting,
@@ -87,13 +78,7 @@ const ChatScreen = ({ user }) => {
       setIsConnected(true);
       console.log('Reconectado ao servidor');
       socket.emit('user-joined', user);
-      processOutbox(socket);
-    }
-
-    function onReconnect() {
-      console.log('Tentando re-identificar após reconexão...');
-      socket.emit('user-joined', user);
-      processOutbox(socket);
+      syncOfflineMessages();
     }
 
     function onDisconnect(reason) {
@@ -106,8 +91,12 @@ const ChatScreen = ({ user }) => {
     }
 
     function onReceiveMessage(message) {
-      setMessages(prev => [...prev, message]);
-      
+      setMessages(prev => {
+        // Evitar duplicatas de mensagens que foram enviadas enquanto offline e agora recebidas via socket
+        if (prev.find(m => m.id === message.id)) return prev;
+        return [...prev, message];
+      });
+
       // Handle Notification
       if (document.visibilityState !== 'visible' && message.user !== user) {
         showNotification(message);
@@ -130,7 +119,6 @@ const ChatScreen = ({ user }) => {
     }
 
     socket.on('connect', onConnect);
-    socket.on('reconnect', onReconnect);
     socket.on('disconnect', onDisconnect);
     socket.on('message-history', onMessageHistory);
     socket.on('receive-message', onReceiveMessage);
@@ -145,7 +133,6 @@ const ChatScreen = ({ user }) => {
 
     return () => {
       socket.off('connect', onConnect);
-      socket.off('reconnect', onReconnect);
       socket.off('disconnect', onDisconnect);
       socket.off('message-history', onMessageHistory);
       socket.off('receive-message', onReceiveMessage);
@@ -154,28 +141,56 @@ const ChatScreen = ({ user }) => {
       socket.off('user-typing', onUserTyping);
       if (cleanupVoice) cleanupVoice();
     };
-  }, [user, setupSocketListeners]);
+  }, [user, setupSocketListeners, syncOfflineMessages]);
 
-  const handleSendMessage = (text) => {
+  const handleSendMessage = async (text) => {
+    const newMessage = {
+      id: `msg-${Date.now()}`,
+      user,
+      text,
+      timestamp: new Date().toISOString()
+    };
+
+    // Adiciona localmente para feedback instantâneo
+    setMessages(prev => [...prev, newMessage]);
+
     if (socket.connected) {
-      socket.emit('send-message', { user, text });
+      socket.emit('send-message', { 
+        id: newMessage.id,
+        user, 
+        text 
+      });
     } else {
-      // Salvar na outbox se estiver offline
-      const pendingMsg = {
-        id: `pending-${Date.now()}`,
-        user: user,
-        text: text,
-        timestamp: new Date().toISOString(),
-        isPending: true
-      };
-      
-      setOutbox(prev => [...prev, pendingMsg]);
-      // Adicionar à lista local para o usuário ver que foi "enviada" (mas pendente)
-      setMessages(prev => [...prev, pendingMsg]);
-      console.log('Mensagem salva em cache (offline)');
-      
-      // Tentar registrar sincronização em background
-      registerBackgroundSync();
+      const pendingMsg = { ...newMessage, isPending: true };
+      setMessages(prev => prev.map(m => m.id === newMessage.id ? pendingMsg : m));
+      await savePendingMessage(pendingMsg);
+    }
+  };
+
+  const handleSendAudio = async (audioData) => {
+    const newMessage = {
+      id: `audio-${Date.now()}`,
+      user,
+      audio: audioData.base64,
+      duration: audioData.duration,
+      timestamp: new Date().toISOString()
+    };
+
+    // Adiciona localmente primeiro para feedback instantâneo
+    setMessages(prev => [...prev, newMessage]);
+
+    if (socket.connected) {
+      socket.emit('send-audio', { 
+        id: newMessage.id, // Enviar o ID para evitar duplicatas ao receber de volta
+        user, 
+        audio: audioData.base64, 
+        duration: audioData.duration 
+      });
+    } else {
+      const pendingMsg = { ...newMessage, isPending: true };
+      // O setMessages já foi feito acima, mas se quiser marcar como pendente:
+      setMessages(prev => prev.map(m => m.id === newMessage.id ? pendingMsg : m));
+      await savePendingMessage(pendingMsg);
     }
   };
 
@@ -187,7 +202,7 @@ const ChatScreen = ({ user }) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       const payload = {
         title: `Nova mensagem de ${message.user}`,
-        body: message.text.substring(0, 50),
+        body: message.audio ? '🎤 Mensagem de áudio' : (message.text ? message.text.substring(0, 50) : ''),
         icon: '/vite.svg'
       };
 
@@ -311,7 +326,11 @@ const ChatScreen = ({ user }) => {
             onStopTransmission={stopTransmission}
           />
         )}
-        <MessageInput onSendMessage={handleSendMessage} onTyping={handleTyping} />
+        <MessageInput 
+          onSendMessage={handleSendMessage} 
+          onTyping={handleTyping} 
+          onSendAudio={handleSendAudio}
+        />
       </footer>
     </div>
   );

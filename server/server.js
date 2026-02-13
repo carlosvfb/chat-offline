@@ -107,7 +107,7 @@ io.on('connection', (socket) => {
   // Handle new messages
   socket.on('send-message', (data) => {
     const newMessage = {
-      id: Date.now().toString(),
+      id: data.id || Date.now().toString(),
       user: data.user,
       text: data.text.substring(0, 500),
       timestamp: new Date().toISOString()
@@ -121,6 +121,26 @@ io.on('connection', (socket) => {
     // Broadcast to all clients
     io.emit('receive-message', newMessage);
     console.log(`Mensagem de ${data.user}: ${data.text.substring(0, 20)}...`);
+  });
+
+  // Handle new audio messages
+  socket.on('send-audio', (data) => {
+    const newMessage = {
+      id: data.id || Date.now().toString(),
+      user: data.user,
+      audio: data.audio,
+      duration: data.duration,
+      timestamp: new Date().toISOString()
+    };
+
+    messages.push(newMessage);
+    if (messages.length > MAX_MESSAGES) {
+      messages.shift();
+    }
+
+    // Broadcast to all clients
+    io.emit('receive-message', newMessage);
+    console.log(`Áudio de ${data.user} (${data.duration}s)`);
   });
 
   // Handle typing indicator

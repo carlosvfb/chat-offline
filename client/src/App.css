@@ -473,6 +473,136 @@ body, html, #root {
   100% { opacity: 1; }
 }
 
+/* Message Input Adjustments */
+.message-input-wrapper {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.message-input-wrapper.recording .message-input {
+  background-color: transparent;
+  box-shadow: none;
+}
+
+.recording-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px;
+  background-color: var(--input-bg);
+  border-radius: 25px;
+  flex: 1;
+  height: 45px;
+  animation: slideIn 0.2s ease-out;
+  box-shadow: 0 1px 1px rgba(0,0,0,0.1);
+}
+
+@keyframes slideIn {
+  from { transform: translateX(-10px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+.recording-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #ff4b4b;
+  border-radius: 50%;
+  animation: blink 1s infinite;
+}
+
+@keyframes blink {
+  0% { opacity: 1; }
+  50% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+.recording-timer {
+  font-weight: 500;
+  font-family: inherit;
+  font-size: 1.1rem;
+  color: var(--text-main);
+}
+
+.recording-hint {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-left: auto;
+}
+
+.mic-btn {
+  background-color: var(--secondary) !important;
+  color: white !important;
+  transition: all 0.2s !important;
+  flex-shrink: 0;
+}
+
+.mic-btn.active {
+  transform: scale(1.1);
+  background-color: #ff4b4b !important;
+  box-shadow: 0 0 15px rgba(255, 75, 75, 0.4);
+}
+
+/* Audio Player in Messages */
+.audio-player {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px;
+  min-width: 200px;
+}
+
+.audio-play-btn {
+  background: none;
+  border: none;
+  color: var(--secondary);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+[data-theme='dark'] .audio-play-btn {
+  color: #53bdeb;
+}
+
+.audio-waveform {
+  flex: 1;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.waveform-bar {
+  flex: 1;
+  height: 60%;
+  background-color: var(--text-secondary);
+  border-radius: 1px;
+  opacity: 0.5;
+  transition: all 0.1s ease;
+}
+
+.waveform-bar.active {
+  background-color: var(--secondary);
+  opacity: 1;
+}
+
+[data-theme='dark'] .waveform-bar.active {
+  background-color: #53bdeb;
+}
+
+.audio-info {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.message-bubble.has-audio {
+  padding: 8px 12px;
+}
+
 /* Mobile Adjustments */
 @media (max-width: 600px) {
   .message-bubble {
